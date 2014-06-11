@@ -1,0 +1,2 @@
+This file is used for program to detect if it's installed using deb package or run from source, file_catalog will return different file path based on this information.
+The deb package do not pack this file, so if this file do not exist, the program will think it's installed from deb package.

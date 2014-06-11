@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Name=Evercliper
+Comment=An evernote client to take  screenshoot and save to evernote
+Type=Application
+Categories=Development;IDE;
+Exec=evercliper
+Terminal=false
+StartupNotify=true
+Icon=/usr/share/pixmaps/evercliper_main_icon.png
+Name[en_US]=Evercliper

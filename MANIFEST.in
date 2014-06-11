@@ -1,0 +1,13 @@
+include *.desktop
+include evercliper/cliper/locale/en_US/LC_MESSAGES/deepin-scrot.mo
+include evercliper/cliper/locale/zh_CN/LC_MESSAGES/deepin-scrot.mo
+include evercliper/cliper/locale/zh_TW/LC_MESSAGES/deepin-scrot.mo
+
+recursive-include evercliper/cliper/po *.po
+recursive-include evercliper/cliper/theme *
+recursive-include evercliper/evernote_adapter *.glade
+include evercliper/evernote_adapter/icon/evercliper_config.png
+include evercliper/evernote_adapter/icon/evercliper_main_icon_error.png
+include evercliper/evernote_adapter/icon/evercliper_main_icon.png
+include evercliper/evernote_adapter/icon/evercliper_main_icon_upload.png
+recursive-include evercliper/evernote_adapter/icon *.png
