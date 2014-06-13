@@ -1,0 +1,8 @@
+*.pyc
+build/*
+dist/*
+*cscope*
+*egg-info*
+*evernote-sdk-python*
+*deb_dist*
+*.tar.gz
