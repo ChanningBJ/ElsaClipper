@@ -6,20 +6,20 @@ class FileCatalogDebMode:
     Use this class if the program is installed using deb package
     '''
     def __init__(self, ):
-        file_list = os.popen('dpkg -L python-evercliper')
+        file_list = os.popen('dpkg -L python-elsaclipper')
         for line in file_list.readlines():
             line = line.strip()
             basename = os.path.split(line)[1]
             if basename == 'locale':
                 self.__locale_path = line
             elif basename == 'themes':
-                self.__theme_path = os.path.join(line,'evercliper')
+                self.__theme_path = os.path.join(line,'elsaclipper')
             elif basename == 'deepin-scrot.ico':
                 self.__deepin_scrot_icon_file_name = line
             elif basename == 'pixmaps':
-                self.__evercliper_icon_path = line
+                self.__elsaclipper_icon_path = line
             elif basename == 'setting_dialog.glade':
-                self.__evercliper_glade_file_name = line
+                self.__elsaclipper_glade_file_name = line
         
     def get_locale_path(self):
         return self.__locale_path
@@ -30,11 +30,11 @@ class FileCatalogDebMode:
     def get_deepin_scrot_icon(self):
         return self.__deepin_scrot_icon_file_name
 
-    def get_evercliper_icon(self,icon_filename):
-        return os.path.join(self.__evercliper_icon_path,icon_filename)
+    def get_elsaclipper_icon(self,icon_filename):
+        return os.path.join(self.__elsaclipper_icon_path,icon_filename)
 
-    def get_evercliper_glade(self):
-        return self.__evercliper_glade_file_name
+    def get_elsaclipper_glade(self):
+        return self.__elsaclipper_glade_file_name
         
 class FileCatalogSrcMode:
     '''
@@ -54,10 +54,10 @@ class FileCatalogSrcMode:
     def get_deepin_scrot_icon(self):
         return os.path.join(self.perfix,'cliper/themes/logo/deepin-scrot.ico')
 
-    def get_evercliper_icon(self,icon_filename):
+    def get_elsaclipper_icon(self,icon_filename):
         return os.path.join(self.perfix,'evernote_adapter/icon',icon_filename)        
 
-    def get_evercliper_glade(self):
+    def get_elsaclipper_glade(self):
         return os.path.join(self.perfix,'evernote_adapter/setting_dialog.glade')        
         
 class FileCatalog:
@@ -90,16 +90,16 @@ class FileCatalog:
         return cls.file_catalog_instance.get_deepin_scrot_icon()
 
     @classmethod
-    def get_evercliper_icon(cls,icon_filename):
+    def get_elsaclipper_icon(cls,icon_filename):
         if cls.file_catalog_instance is None:
             cls.detect_install_mode()
-        return cls.file_catalog_instance.get_evercliper_icon(icon_filename)
+        return cls.file_catalog_instance.get_elsaclipper_icon(icon_filename)
 
     @classmethod
-    def get_evercliper_glade(cls):
+    def get_elsaclipper_glade(cls):
         if cls.file_catalog_instance is None:
             cls.detect_install_mode()
-        return cls.file_catalog_instance.get_evercliper_glade()
+        return cls.file_catalog_instance.get_elsaclipper_glade()
         
 if __name__ == '__main__':
     print os.path.realpath(__file__)

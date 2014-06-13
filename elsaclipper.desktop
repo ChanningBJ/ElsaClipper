@@ -1,11 +1,11 @@
 [Desktop Entry]
 Version=1.0
-Name=Evercliper
+Name=ElsaClipper
 Comment=An evernote client to take  screenshoot and save to evernote
 Type=Application
 Categories=Development;IDE;
-Exec=evercliper
+Exec=elsaclipper
 Terminal=false
 StartupNotify=true
-Icon=/usr/share/pixmaps/evercliper_main_icon.png
-Name[en_US]=Evercliper
+Icon=/usr/share/pixmaps/elsaclipper_main_icon.png
+Name[en_US]=ElsaClipper

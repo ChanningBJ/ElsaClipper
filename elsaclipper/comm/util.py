@@ -3,7 +3,7 @@ import json
 import os
 import logging
 import threading
-PROGRAM_NAME = 'evercliper'
+PROGRAM_NAME = 'elsaclipper'
 
 class KeyRing:
     

@@ -38,9 +38,9 @@ class AuthDialog():
         self.__auth_token = None
         self.__authData = {}
         builder = Gtk.Builder()
-        builder.add_from_file(FileCatalog.get_evercliper_glade())
+        builder.add_from_file(FileCatalog.get_elsaclipper_glade())
         self.__dialog = builder.get_object('auth_dialog')
-        self.__dialog.set_icon_from_file(FileCatalog.get_evercliper_icon('evercliper_config.png'))
+        self.__dialog.set_icon_from_file(FileCatalog.get_elsaclipper_icon('elsaclipper_config.png'))
         self.__spinner = builder.get_object('connecting_spinner')
         self.__status_label = builder.get_object('connecting_label')
         self.__status_label.set_text(AuthDialog.STATUS_MESSAGE_CONNECTING)
@@ -133,9 +133,9 @@ class SettingDialog:
         @staticmethod
         def callback(p1, p2):
             logging.debug("shotrcut key pressed")
-            logging.debug("Run evercliper-clip")
-            subprocess.call("evercliper-clip", shell=True)
-            logging.debug("evercliper-clip done")
+            logging.debug("Run elsaclipper-clip")
+            subprocess.call("elsaclipper-clip", shell=True)
+            logging.debug("elsaclipper-clip done")
             
         @classmethod
         def bind_key(cls):
@@ -209,9 +209,9 @@ class SettingDialog:
     def __init__(self, parent):
 
         builder = Gtk.Builder()
-        builder.add_from_file(FileCatalog.get_evercliper_glade())
+        builder.add_from_file(FileCatalog.get_elsaclipper_glade())
         self.__dialog = builder.get_object("SettingLogDialog")
-        self.__dialog.set_icon_from_file(FileCatalog.get_evercliper_icon('evercliper_config.png'))
+        self.__dialog.set_icon_from_file(FileCatalog.get_elsaclipper_icon('elsaclipper_config.png'))
         self.__dialog.show_all()
 
         self.__radiobutton_yinxiang = builder.get_object(SettingDialog.UI_RADIOBUTTON_YINXIANG)
@@ -375,9 +375,9 @@ class SettingDialog:
 
 class StatusIcon:
 
-    PNG_MAIN_ICON = FileCatalog.get_evercliper_icon('evercliper_main_icon.png') #  root.get_full_path('evernote_adapter','icon','main_icon.png')
-    PNG_MAIN_ICON_UPLOAD = FileCatalog.get_evercliper_icon('evercliper_main_icon_upload.png') #root.get_full_path('evernote_adapter','icon','main_icon_upload.png')
-    PNG_MAIN_ICON_ERROR = FileCatalog.get_evercliper_icon('evercliper_main_icon_error.png') # root.get_full_path('evernote_adapter','icon','main_icon_error.png')
+    PNG_MAIN_ICON = FileCatalog.get_elsaclipper_icon('elsaclipper_main_icon.png') #  root.get_full_path('evernote_adapter','icon','main_icon.png')
+    PNG_MAIN_ICON_UPLOAD = FileCatalog.get_elsaclipper_icon('elsaclipper_main_icon_upload.png') #root.get_full_path('evernote_adapter','icon','main_icon_upload.png')
+    PNG_MAIN_ICON_ERROR = FileCatalog.get_elsaclipper_icon('elsaclipper_main_icon_error.png') # root.get_full_path('evernote_adapter','icon','main_icon_error.png')
     
     class NoteListenerManagerThread(threading.Thread):
         def __init__(self, indicator):
@@ -417,7 +417,7 @@ class StatusIcon:
     
     def __init__(self,):
 
-        self.ind = AppIndicator.Indicator.new("evercliper-indicator",
+        self.ind = AppIndicator.Indicator.new("elsaclipper-indicator",
                                               "indicator-messages",
                                               AppIndicator.IndicatorCategory.APPLICATION_STATUS)
         self.ind.set_status(AppIndicator.IndicatorStatus.ACTIVE)
