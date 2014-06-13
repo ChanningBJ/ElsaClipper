@@ -26,8 +26,8 @@ class KeyRing:
 
 
 class EverNoteConsumerInfo:
-    CONSUMER_KEY="channing"
-    CONSUMER_SECRET="35627ab2ee94809f"
+    CONSUMER_KEY="channing153"
+    CONSUMER_SECRET="37dccf460191fa6c"
         
 
 
@@ -58,6 +58,9 @@ class MetaData:
     KEY_SHORTCUT_ALT = 'shotrcut_alt'
     KEY_SHORTCUT_VAL = 'shortcut_val'
     KEY_APP_PID = 'application_pid'
+    KEY_Evernote_HOST = 'evernote_host'
+    VAL_Evernote_HOST_Yinxiang = 'www.yinxiang.com'
+    VAL_Evernote_HOST_International = 'www.evernote.com'
 
     DATA = {}
     DATA_LOCK = threading.RLock()
@@ -73,7 +76,26 @@ class MetaData:
                 cls.DATA = json.load(fp)
         except IOError:
             pass
-                
+
+    @classmethod
+    def set_evernote_host_international(cls):
+        with cls.DATA_LOCK:
+            cls.DATA[cls.KEY_Evernote_HOST] = cls.VAL_Evernote_HOST_International
+            with open(cls.DATA_FILENAME,'w') as fp:
+                json.dump(cls.DATA,fp)
+
+    @classmethod
+    def set_evernote_host_yinxiang(cls):
+        with cls.DATA_LOCK:
+            cls.DATA[cls.KEY_Evernote_HOST] = cls.VAL_Evernote_HOST_Yinxiang
+            with open(cls.DATA_FILENAME,'w') as fp:
+                json.dump(cls.DATA,fp)
+
+    @classmethod
+    def get_evernote_host(cls):
+        with cls.DATA_LOCK:
+            return cls.DATA.get(cls.KEY_Evernote_HOST,cls.VAL_Evernote_HOST_Yinxiang)
+            
         
     @classmethod
     def get_snapshoot_shortcut(cls):

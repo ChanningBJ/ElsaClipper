@@ -73,7 +73,7 @@ class AuthDialog():
         client = EvernoteClient(
             consumer_key=EverNoteConsumerInfo.CONSUMER_KEY,
             consumer_secret=EverNoteConsumerInfo.CONSUMER_SECRET,
-            sandbox=True # Default: True
+            sandbox=True # Default: True ; if using yinxiang, set service_host='www.yinxiang.com' ; in using Evernote International, set  service_host='www.evernote.com'
         )
         callbackUrl = "http://"+PROGRAM_NAME
         request_token = client.get_request_token(callbackUrl)
@@ -203,6 +203,8 @@ class SettingDialog:
     UI_AUTH_STATUS_SPINNER = 'auth_status_spinner'
     UI_SHORTCUT_ENTRY = 'shortcut_entry'
     UI_SHORTCUT_ALT_CHECK = 'alt_check'
+    UI_RADIOBUTTON_EVERNOTE_INTERNATIONAL = 'radiobutton_evernote_international'
+    UI_RADIOBUTTON_YINXIANG = 'radiobutton_yinxiang'
 
     def __init__(self, parent):
 
@@ -211,6 +213,14 @@ class SettingDialog:
         self.__dialog = builder.get_object("SettingLogDialog")
         self.__dialog.set_icon_from_file(FileCatalog.get_evercliper_icon('evercliper_config.png'))
         self.__dialog.show_all()
+
+        self.__radiobutton_yinxiang = builder.get_object(SettingDialog.UI_RADIOBUTTON_YINXIANG)
+        self.__radiobutton_evernote_international = builder.get_object(SettingDialog.UI_RADIOBUTTON_EVERNOTE_INTERNATIONAL)
+        if MetaData.get_evernote_host() == MetaData.VAL_Evernote_HOST_Yinxiang:
+            self.__radiobutton_yinxiang.set_active(True)
+        else:
+            self.__radiobutton_evernote_international.set_active(True)
+        
         self.__notebook_selecter = builder.get_object(SettingDialog.UI_NOTEBOOK_SELECTER)
         self.__notebook_selecter_changed_times = 0
         self.__notebook_spinner = builder.get_object(SettingDialog.UI_NOTEBOOK_SPINNER)
@@ -237,7 +247,8 @@ class SettingDialog:
                 'on_authorize_button_clicked': self.on_authorize_button_clicked_cb,
                 'on_default_note_book_selecter_changed': self.on_default_note_book_selecter_changed,
                 'on_shortcut_entry_changed': self.on_shortcut_entry_changed,
-                'on_alt_check_toggled': self.on_alt_check_toggled
+                'on_alt_check_toggled': self.on_alt_check_toggled,
+                'on_account_type_changed':self.on_account_type_changed
             }
         )
         authorize_button = builder.get_object(SettingDialog.UI_OBJECT_AUTH_BUTTON)
@@ -291,7 +302,28 @@ class SettingDialog:
             if text != None:
                 guid = NoteBookInfo.get_guid_by_notebook_name(text)
                 MetaData.set_target_notebook(text,guid)
-            
+
+    def on_account_type_changed(self, radiobutton):
+        if radiobutton.get_active():
+            if radiobutton is self.__radiobutton_yinxiang:
+                logging.debug('change to yinxiang')
+                MetaData.set_evernote_host_yinxiang()
+            else:
+                logging.debug('change to international')
+                MetaData.set_evernote_host_international()
+            if KeyRing.get_auth_token()!=None:
+                logging.debug('remove auth from keyring')
+                KeyRing.set_auth_token('')
+                self.__auth_token.set_label(SettingDialog.BUTTON_LABLE_AUTHORIZE)
+                self.__auth_status_image.set_from_icon_name('dialog-warning',Gtk.IconSize.BUTTON)
+                self.__notebook_updater = SettingDialog.NotebookUpdater(
+                    self.__notebook_spinner,
+                    self.__notebook_image,
+                    self.__notebook_selecter
+                )
+                MetaData.set_target_notebook(None,None)
+                self.__notebook_updater.start()
+
             
     def on_authorize_button_clicked_cb(self, button):
         logging.debug('')
