@@ -26,8 +26,8 @@ class KeyRing:
 
 
 class EverNoteConsumerInfo:
-    CONSUMER_KEY="channing153"
-    CONSUMER_SECRET="37dccf460191fa6c"
+    CONSUMER_KEY="channing153-4571"
+    CONSUMER_SECRET="16a69423905d3155"
         
 
 
@@ -52,14 +52,14 @@ class MetaData:
     DATA_FILE_DIR_NAME = os.path.expanduser(os.path.join('~/','.'+PROGRAM_NAME))
     DEFAULT_NOTE_BUFFER_PATH = os.path.expanduser(os.path.join('~/','.'+PROGRAM_NAME,'note_buffer_path'))
     
-    KEY_TARGET_NOTEBOOK = 'target_note_book'
+    # KEY_TARGET_NOTEBOOK = 'target_note_book'
     KEY_NOTE_LISTENER_PID = 'note_listener_pid'
     KEY_NOTE_BUFFER_PATH = 'note_buffer_path'
     KEY_SHORTCUT_ALT = 'shotrcut_alt'
     KEY_SHORTCUT_VAL = 'shortcut_val'
     KEY_APP_PID = 'application_pid'
     KEY_Evernote_HOST = 'evernote_host'
-    VAL_Evernote_HOST_Yinxiang = 'www.yinxiang.com'
+    VAL_Evernote_HOST_Yinxiang = 'app.yinxiang.com'
     VAL_Evernote_HOST_International = 'www.evernote.com'
 
     DATA = {}
@@ -152,29 +152,29 @@ class MetaData:
         return True                
                     
 
-    @classmethod
-    def get_target_notebook(cls):
-        '''
-        Will return (notebook,guid), if target notebook is not set, will return (None,None)
-        '''
-        logging.debug('data = '+str(cls.DATA))
-        with cls.DATA_LOCK:
-            (name,guid) = cls.DATA.get(MetaData.KEY_TARGET_NOTEBOOK,(None,None))
-        if name is not None and type(name) is str:
-            name = name.decode('utf-8')
-        return (name,guid)
+    # @classmethod
+    # def get_target_notebook(cls):
+    #     '''
+    #     Will return (notebook,guid), if target notebook is not set, will return (None,None)
+    #     '''
+    #     logging.debug('data = '+str(cls.DATA))
+    #     with cls.DATA_LOCK:
+    #         (name,guid) = cls.DATA.get(MetaData.KEY_TARGET_NOTEBOOK,(None,None))
+    #     if name is not None and type(name) is str:
+    #         name = name.decode('utf-8')
+    #     return (name,guid)
 
-    @classmethod
-    def set_target_notebook(cls,notebook,guid):
-        logging.debug('target notenook : (%s,%s), (notebook,guid)')
-        with cls.DATA_LOCK:
-            if notebook is None or guid is None:
-                if MetaData.KEY_TARGET_NOTEBOOK in cls.DATA:
-                    del(cls.DATA[MetaData.KEY_TARGET_NOTEBOOK])
-            else:
-                cls.DATA[MetaData.KEY_TARGET_NOTEBOOK] = (notebook,guid)
-            with open(cls.DATA_FILENAME,'w') as fp:
-                json.dump(cls.DATA,fp)
-        return True
+    # @classmethod
+    # def set_target_notebook(cls,notebook,guid):
+    #     logging.debug('target notenook : (%s,%s), (notebook,guid)')
+    #     with cls.DATA_LOCK:
+    #         if notebook is None or guid is None:
+    #             if MetaData.KEY_TARGET_NOTEBOOK in cls.DATA:
+    #                 del(cls.DATA[MetaData.KEY_TARGET_NOTEBOOK])
+    #         else:
+    #             cls.DATA[MetaData.KEY_TARGET_NOTEBOOK] = (notebook,guid)
+    #         with open(cls.DATA_FILENAME,'w') as fp:
+    #             json.dump(cls.DATA,fp)
+    #     return True
 
         

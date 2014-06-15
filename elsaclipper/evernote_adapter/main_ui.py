@@ -25,7 +25,7 @@ import socket
 import sys
 import time
 import subprocess
-
+import root
 
 
 class AuthDialog():
@@ -70,19 +70,25 @@ class AuthDialog():
         self.__dialog.destroy()
         
     def _getEverNoteOAuthURL(self):
+        print MetaData.get_evernote_host()
         client = EvernoteClient(
             consumer_key=EverNoteConsumerInfo.CONSUMER_KEY,
             consumer_secret=EverNoteConsumerInfo.CONSUMER_SECRET,
-            sandbox=True # Default: True ; if using yinxiang, set service_host='www.yinxiang.com' ; in using Evernote International, set  service_host='www.evernote.com'
+            service_host = MetaData.get_evernote_host(),
+            sandbox=False # Default: True ; if using yinxiang, set service_host='www.yinxiang.com' ; in using Evernote International, set  service_host='www.evernote.com'
         )
+
         callbackUrl = "http://"+PROGRAM_NAME
         request_token = client.get_request_token(callbackUrl)
+        print request_token
         # Save the request token information for later
         self.__authData['oauth_token'] = request_token['oauth_token']
         self.__authData['oauth_token_secret'] = request_token['oauth_token_secret']
 
         # Redirect the user to the Evernote authorization URL
-        return client.get_authorize_url(request_token)
+        url = client.get_authorize_url(request_token)
+        logging.debug(url)
+        return url
 
     def on_load_status(self, webkitView, *args, **kwargs):
         logging.debug("load status changed")
@@ -98,6 +104,7 @@ class AuthDialog():
         self.__spinner.show()
         self.__status_label.set_text(AuthDialog.STATUS_MESSAGE_CONNECTING)
         url = req.get_uri()
+        print url
         if PROGRAM_NAME.lower() in url:
             query = urlparse.urlparse(url).query
             data = dict(urlparse.parse_qsl(query))
@@ -111,13 +118,15 @@ class AuthDialog():
             client = EvernoteClient(
                 consumer_key=EverNoteConsumerInfo.CONSUMER_KEY,
                 consumer_secret=EverNoteConsumerInfo.CONSUMER_SECRET,
-                sandbox=True # Default: True
+                service_host = MetaData.get_evernote_host(),
+                sandbox=False # Default: True
             )
             self.__auth_token = client.get_access_token(
                 self.__authData['oauth_token'],
                 self.__authData['oauth_token_secret'],
                 self.__authData['oauth_verifier']
             )
+            print self.__auth_token
             self.__dialog.response(100)
         return False
 
@@ -134,7 +143,12 @@ class SettingDialog:
         def callback(p1, p2):
             logging.debug("shotrcut key pressed")
             logging.debug("Run elsaclipper-clip")
-            subprocess.call("elsaclipper-clip", shell=True)
+            flag_file_name = root.get_full_path('comm','flagfile')
+            if os.path.exists(flag_file_name):
+                init_file = root.get_full_path('__init__.py')
+                subprocess.call("python "+init_file+" clip", shell=True)
+            else:
+                subprocess.call("elsaclipper-clip", shell=True)
             logging.debug("elsaclipper-clip done")
             
         @classmethod
@@ -149,56 +163,56 @@ class SettingDialog:
                 logging.error("Bind shortcut key failed ")
 
 
-    class NotebookUpdater(threading.Thread):
+    # class NotebookUpdater(threading.Thread):
 
-        def __init__(self, spinner, image, notebook_selecter):
-            threading.Thread.__init__(self)
-            self.__spinner = spinner
-            self.__image = image
-            self.__notebook_selecter = notebook_selecter
+    #     def __init__(self, spinner, image, notebook_selecter):
+    #         threading.Thread.__init__(self)
+    #         self.__spinner = spinner
+    #         self.__image = image
+    #         self.__notebook_selecter = notebook_selecter
             
-        def run(self, ):
-            self.__spinner.show()
-            self.__spinner.start()
-            self.__image.hide();
+    #     def run(self, ):
+    #         self.__spinner.show()
+    #         self.__spinner.start()
+    #         self.__image.hide();
 
-            evernote_adapter = EvernoteAdapter()
-            NoteBookInfo.set_notebooks(evernote_adapter.get_notebook_name_guid_list())
-            (default_notebook_name, default_notebook_guid) = MetaData.get_target_notebook()
-            if default_notebook_name is None:
-                (default_notebook_name, default_notebook_guid) = evernote_adapter.get_default_notebook()
-                MetaData.set_target_notebook(default_notebook_name, default_notebook_guid)
-            listmodel = Gtk.ListStore(str)
-            notebook_index = -1
-            default_notebook_index = -1
-            for notebook in evernote_adapter.get_notebook_name_list():
-                notebook_index += 1
-                if default_notebook_name == notebook.decode('utf-8'):
-                    default_notebook_index = notebook_index
-                listmodel.append([notebook])
-            self.__notebook_selecter.set_model(listmodel)
-            self.__notebook_selecter.set_active(default_notebook_index)
+    #         evernote_adapter = EvernoteAdapter()
+    #         NoteBookInfo.set_notebooks(evernote_adapter.get_notebook_name_guid_list())
+    #         (default_notebook_name, default_notebook_guid) = MetaData.get_target_notebook()
+    #         if default_notebook_name is None:
+    #             (default_notebook_name, default_notebook_guid) = evernote_adapter.get_default_notebook()
+    #             MetaData.set_target_notebook(default_notebook_name, default_notebook_guid)
+    #         listmodel = Gtk.ListStore(str)
+    #         notebook_index = -1
+    #         default_notebook_index = -1
+    #         for notebook in evernote_adapter.get_notebook_name_list():
+    #             notebook_index += 1
+    #             if default_notebook_name == notebook.decode('utf-8'):
+    #                 default_notebook_index = notebook_index
+    #             listmodel.append([notebook])
+    #         self.__notebook_selecter.set_model(listmodel)
+    #         self.__notebook_selecter.set_active(default_notebook_index)
 
-            cell = Gtk.CellRendererText()
+    #         cell = Gtk.CellRendererText()
 
-            # pack the cell into the beginning of the combobox, allocating
-            # no more space than needed
-            self.__notebook_selecter.pack_start(cell, True)
-            self.__spinner.hide()
-            if default_notebook_name is None:
-                self.__image.set_from_icon_name('dialog-warning',Gtk.IconSize.BUTTON)
-            else:
-                self.__image.set_from_icon_name('accessories-text-editor',Gtk.IconSize.BUTTON)
-            self.__image.show()
+    #         # pack the cell into the beginning of the combobox, allocating
+    #         # no more space than needed
+    #         self.__notebook_selecter.pack_start(cell, True)
+    #         self.__spinner.hide()
+    #         if default_notebook_name is None:
+    #             self.__image.set_from_icon_name('dialog-warning',Gtk.IconSize.BUTTON)
+    #         else:
+    #             self.__image.set_from_icon_name('accessories-text-editor',Gtk.IconSize.BUTTON)
+    #         self.__image.show()
     
     
     BUTTON_LABLE_AUTHORIZE = 'authorize'
     BUTTON_LABLE_UNAUTHORIZE = 'remove authorization'
 
     UI_OBJECT_AUTH_BUTTON = 'authorize_button'
-    UI_NOTEBOOK_SELECTER = 'default_note_book_selecter'
-    UI_NOTEBOOK_SPINNER = 'notebook_spinner'
-    UI_NOTEBOOK_IMAGE = 'notebook_image'
+    # UI_NOTEBOOK_SELECTER = 'default_note_book_selecter'
+    # UI_NOTEBOOK_SPINNER = 'notebook_spinner'
+    # UI_NOTEBOOK_IMAGE = 'notebook_image'
     UI_AUTH_STATUS_IMAGE = 'authorization_status_image'
     UI_AUTH_STATUS_SPINNER = 'auth_status_spinner'
     UI_SHORTCUT_ENTRY = 'shortcut_entry'
@@ -220,18 +234,18 @@ class SettingDialog:
             self.__radiobutton_yinxiang.set_active(True)
         else:
             self.__radiobutton_evernote_international.set_active(True)
-        
-        self.__notebook_selecter = builder.get_object(SettingDialog.UI_NOTEBOOK_SELECTER)
-        self.__notebook_selecter_changed_times = 0
-        self.__notebook_spinner = builder.get_object(SettingDialog.UI_NOTEBOOK_SPINNER)
-        self.__notebook_spinner.start()
-        self.__notebook_image = builder.get_object(SettingDialog.UI_NOTEBOOK_IMAGE)
-        self.__notebook_image.hide()
+
+        # self.__notebook_selecter = builder.get_object(SettingDialog.UI_NOTEBOOK_SELECTER)
+        # self.__notebook_selecter_changed_times = 0
+        # self.__notebook_spinner = builder.get_object(SettingDialog.UI_NOTEBOOK_SPINNER)
+        # self.__notebook_spinner.start()
+        # self.__notebook_image = builder.get_object(SettingDialog.UI_NOTEBOOK_IMAGE)
+        # self.__notebook_image.hide()
         self.__auth_status_image = builder.get_object(SettingDialog.UI_AUTH_STATUS_IMAGE)
         self.__auth_status_spinner = builder.get_object(SettingDialog.UI_AUTH_STATUS_SPINNER)
         self.__auth_status_spinner.hide()
 
-        self.__notebook_updater =  None
+        # self.__notebook_updater =  None
         
 
         self.__shortcut_text_entry = builder.get_object(SettingDialog.UI_SHORTCUT_ENTRY)
@@ -245,32 +259,32 @@ class SettingDialog:
             {
                 "on_close_button_clicked" : self.on_close_button_clicked,
                 'on_authorize_button_clicked': self.on_authorize_button_clicked_cb,
-                'on_default_note_book_selecter_changed': self.on_default_note_book_selecter_changed,
+                # 'on_default_note_book_selecter_changed': self.on_default_note_book_selecter_changed,
                 'on_shortcut_entry_changed': self.on_shortcut_entry_changed,
                 'on_alt_check_toggled': self.on_alt_check_toggled,
                 'on_account_type_changed':self.on_account_type_changed
             }
         )
-        authorize_button = builder.get_object(SettingDialog.UI_OBJECT_AUTH_BUTTON)
+        self.__authorize_button = builder.get_object(SettingDialog.UI_OBJECT_AUTH_BUTTON)
         authToken = KeyRing.get_auth_token()
         logging.debug('auth token = %s' % authToken)
         if authToken is None or authToken=='':
-            authorize_button.set_label(SettingDialog.BUTTON_LABLE_AUTHORIZE)
+            self.__authorize_button.set_label(SettingDialog.BUTTON_LABLE_AUTHORIZE)
             self.__auth_status_image.set_from_icon_name('dialog-warning',Gtk.IconSize.BUTTON)
-            self.__notebook_image.set_from_icon_name('dialog-warning',Gtk.IconSize.BUTTON)
-            self.__notebook_image.show()
-            self.__notebook_spinner.hide()
+            # self.__notebook_image.set_from_icon_name('dialog-warning',Gtk.IconSize.BUTTON)
+            # self.__notebook_image.show()
+            # self.__notebook_spinner.hide()
         else:
-            authorize_button.set_label(SettingDialog.BUTTON_LABLE_UNAUTHORIZE)
+            self.__authorize_button.set_label(SettingDialog.BUTTON_LABLE_UNAUTHORIZE)
             self.__auth_status_image.set_from_icon_name('dialog-ok',Gtk.IconSize.BUTTON)
-            self.__notebook_image.hide()
-            self.__notebook_spinner.show()
-            self.__notebook_updater = SettingDialog.NotebookUpdater(
-                self.__notebook_spinner,
-                self.__notebook_image,
-                self.__notebook_selecter
-            )
-            self.__notebook_updater.start()
+            # self.__notebook_image.hide()
+            # self.__notebook_spinner.show()
+            # self.__notebook_updater = SettingDialog.NotebookUpdater(
+            #     self.__notebook_spinner,
+            #     self.__notebook_image,
+            #     self.__notebook_selecter
+            # )
+            # self.__notebook_updater.start()
             
     def on_shortcut_entry_changed(self, widget):
         text = widget.get_text().upper()
@@ -292,16 +306,16 @@ class SettingDialog:
         
 
         
-    def on_default_note_book_selecter_changed(self,combo):
-        '''
-        Change the default notebook 
-        '''
-        if self.__notebook_updater is None or not self.__notebook_updater.is_alive():
-            text = combo.get_active_text()
-            logging.debug('combo selected text: '+str(text))
-            if text != None:
-                guid = NoteBookInfo.get_guid_by_notebook_name(text)
-                MetaData.set_target_notebook(text,guid)
+    # def on_default_note_book_selecter_changed(self,combo):
+    #     '''
+    #     Change the default notebook 
+    #     '''
+    #     if self.__notebook_updater is None or not self.__notebook_updater.is_alive():
+    #         text = combo.get_active_text()
+    #         logging.debug('combo selected text: '+str(text))
+    #         if text != None:
+    #             guid = NoteBookInfo.get_guid_by_notebook_name(text)
+    #             MetaData.set_target_notebook(text,guid)
 
     def on_account_type_changed(self, radiobutton):
         if radiobutton.get_active():
@@ -314,15 +328,15 @@ class SettingDialog:
             if KeyRing.get_auth_token()!=None:
                 logging.debug('remove auth from keyring')
                 KeyRing.set_auth_token('')
-                self.__auth_token.set_label(SettingDialog.BUTTON_LABLE_AUTHORIZE)
+                self.__authorize_button.set_label(SettingDialog.BUTTON_LABLE_AUTHORIZE)
                 self.__auth_status_image.set_from_icon_name('dialog-warning',Gtk.IconSize.BUTTON)
-                self.__notebook_updater = SettingDialog.NotebookUpdater(
-                    self.__notebook_spinner,
-                    self.__notebook_image,
-                    self.__notebook_selecter
-                )
-                MetaData.set_target_notebook(None,None)
-                self.__notebook_updater.start()
+                # self.__notebook_updater = SettingDialog.NotebookUpdater(
+                #     self.__notebook_spinner,
+                #     self.__notebook_image,
+                #     self.__notebook_selecter
+                # )
+                # MetaData.set_target_notebook(None,None)
+                # self.__notebook_updater.start()
 
             
     def on_authorize_button_clicked_cb(self, button):
@@ -341,12 +355,12 @@ class SettingDialog:
                 self.__auth_status_image.set_from_icon_name('dialog-ok',Gtk.IconSize.BUTTON)
                 self.__auth_status_image.show()
                 self.__auth_status_spinner.hide()
-                self.__notebook_updater = SettingDialog.NotebookUpdater(
-                    self.__notebook_spinner,
-                    self.__notebook_image,
-                    self.__notebook_selecter
-                )
-                self.__notebook_updater.start()
+                # self.__notebook_updater = SettingDialog.NotebookUpdater(
+                #     self.__notebook_spinner,
+                #     self.__notebook_image,
+                #     self.__notebook_selecter
+                # )
+                # self.__notebook_updater.start()
             else:
                 self.__auth_status_spinner.hide()
                 self.__auth_status_image.show()
@@ -355,13 +369,13 @@ class SettingDialog:
             KeyRing.set_auth_token('')
             button.set_label(SettingDialog.BUTTON_LABLE_AUTHORIZE)
             self.__auth_status_image.set_from_icon_name('dialog-warning',Gtk.IconSize.BUTTON)
-            self.__notebook_updater = SettingDialog.NotebookUpdater(
-                self.__notebook_spinner,
-                self.__notebook_image,
-                self.__notebook_selecter
-            )
-            MetaData.set_target_notebook(None,None)
-            self.__notebook_updater.start()
+            # self.__notebook_updater = SettingDialog.NotebookUpdater(
+            #     self.__notebook_spinner,
+            #     self.__notebook_image,
+            #     self.__notebook_selecter
+            # )
+            # MetaData.set_target_notebook(None,None)
+            # self.__notebook_updater.start()
             
 
     def on_close_button_clicked(self, param):
@@ -395,10 +409,10 @@ class StatusIcon:
                 if type(filename) is str:
                     # logging.debug(str(filename))
                     self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON_UPLOAD)
-                    (name,guid) = MetaData.get_target_notebook()
+                    # (name,guid) = MetaData.get_target_notebook()
                     
-                    ret = EvernoteAdapter.savePicture(filename,guid)
-                    if ret:
+                    ret = EvernoteAdapter.savePicture(filename)
+                    if ret == EvernoteAdapter.STATUS_SAVE_OK :
                         self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON)
                         time_str = time.ctime(os.path.getmtime(filename))
                         Notify.Notification.new('Snapshoot saved to Evernote',time_str,'').show()
@@ -475,6 +489,7 @@ def main():
         GLib.threads_init()
         Gdk.threads_init()
         Gdk.threads_enter()
+        EvernoteAdapter.login()
         SettingDialog.KeyBinder.bind_key()
         StatusIcon()
         Gtk.main()

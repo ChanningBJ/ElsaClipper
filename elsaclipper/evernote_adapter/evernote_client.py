@@ -3,58 +3,88 @@ import logging
 from evernote.api.client import EvernoteClient
 import evernote.edam.type.ttypes as Types
 from comm.util import KeyRing
+from comm.util import EverNoteConsumerInfo
+from comm.util import MetaData
 import hashlib
 
 
 class EvernoteAdapter():
 
     FILE_TYPE = ['PNG']
+    notebook_guid = None
+    notebook_name = None
+    note_store = None
 
-    def __init__(self,):
-        auth_token = KeyRing.get_auth_token()
-        if auth_token is None:
-            self.__notebooks = []
-        else:
-            client = EvernoteClient(token=auth_token)
-            noteStore = client.get_note_store()
-            notebooks = noteStore.listNotebooks()
-            self.__notebooks = [(notebook.name,notebook.guid,notebook.defaultNotebook) for notebook in notebooks]
 
-    def get_notebook_name_list(self,):
-        return [name for (name,guid,default) in self.__notebooks]
+    STATUS_OK = 0
+    STATUS_NO_AUTH_TOKEN = 1
+    STATUS_NOTEBOOK_DELETED = 2
 
-    def get_default_notebook(self,):
-        if len(self.__notebooks)==0:
-            return (None,None)
-        else:
-            return [ (name.decode('utf-8'),guid) for (name,guid,default) in self.__notebooks if default][0]
-
-    def get_notebook_name_guid_list(self,):
-        return [ (name,guid) for (name,guid,default) in self.__notebooks]
-        
+    STATUS_SAVE_OK = 3
+    STATUS_UNSUPPORTED_FILE_TYPE = 4
+    STATUS_SAVE_ERROR = 5
+    
     @classmethod
-    def savePicture(cls,filename, notebook_guid = None):
+    def login(cls,):
+        '''
+        Get the notebook name and guid, get note_store
+        Returns:
+          STATUS_OK              : Everything is fine
+          STATUS_NO_AUTH_TOKEN   : No auth token can be found in keying, user should authorize this application
+          STATUS_NOTEBOOK_DELETED: The application is authorized but 'app notebooks' maybe deleted by user, user should authorize this application again.
+
+        For mote information about "app notebooks": http://dev.yinxiang.com/doc/articles/app_notebook.php
+        '''
+        auth_token = KeyRing.get_auth_token()
+        if auth_token is not None:
+            client = EvernoteClient(
+                consumer_key=EverNoteConsumerInfo.CONSUMER_KEY,
+                consumer_secret=EverNoteConsumerInfo.CONSUMER_SECRET,
+                service_host = MetaData.get_evernote_host(),
+                token=auth_token,
+                sandbox=False)
+            cls.note_store = client.get_note_store()
+            notebooks = cls.note_store.listNotebooks()
+            len_notebooks = len(notebooks)
+            if len_notebooks == 0:
+                logging.error("Application notebook has been deleted")
+                return cls.STATUS_NOTEBOOK_DELETED
+            cls.notebook_name = notebooks[0].name
+            cls.notebook_guid = notebooks[0].guid
+            return cls.STATUS_OK
+        else:
+            return cls.STATUS_NO_AUTH_TOKEN
+
+    @classmethod
+    def savePicture(cls,filename, ):
+        '''
+        Save the picture to evernote
+        Returns:
+          STATUS_SAVE_OK              : The picture is saved to evernote
+          STATUS_UNSUPPORTED_FILE_TYPE: The file type if not supported
+          STATUS_SAVE_ERROR           : Error saving picture to Evernote 
+        '''
         logging.debug(str(filename))
         extension = filename.split('.')[-1]
         if extension.upper() not in cls.FILE_TYPE:
             logging.debug('Unsupported file type : %s' % filename)
-            return False
-        auth_token = KeyRing.get_auth_token()
-        logging.debug('auth_token = '+str(auth_token))
-        if auth_token is None:
-            return False
-        logging.debug('')
-        client = EvernoteClient(token=auth_token)
-        try:
-            noteStore = client.get_note_store()
-        except Exception, e:
-            logging.error(str(e))
-            logging.error('Auth token is not correct')
-            return False
+            return cls.STATUS_UNSUPPORTED_FILE_TYPE
+        # auth_token = KeyRing.get_auth_token()
+        # logging.debug('auth_token = '+str(auth_token))
+        # if auth_token is None:
+            # return False
+        # logging.debug('')
+        # client = EvernoteClient(token=auth_token)
+        # try:
+        #     noteStore = cls.client.get_note_store()
+        # except Exception, e:
+        #     logging.error(str(e))
+        #     logging.error('Auth token is not correct')
+        #     return False
                 
         note = Types.Note()
-        if notebook_guid :
-            note.notebookGuid = notebook_guid 
+        # if notebook_guid :
+        note.notebookGuid = cls.notebook_guid
         note.title = os.path.basename(filename)
         note.content = '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml2.dtd">'
         note.content += '<en-note><br/>'
@@ -90,11 +120,12 @@ class EvernoteAdapter():
         # Set the note's resource list
         note.resources = resource_list
         try:
-            note = noteStore.createNote(note)
+            note =  cls.note_store.createNote(note)
         except Exception,e:
             logging.error(str(e))
             logging.error('error saving the note')
+            return cls.STATUS_SAVE_ERROR
         
         logging.debug('Saving to Evernote Done, file = %s' % filename)
-        return True
+        return cls.STATUS_SAVE_OK
 

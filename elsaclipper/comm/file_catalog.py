@@ -52,7 +52,7 @@ class FileCatalogSrcMode:
         return os.path.join(self.perfix,'cliper/theme',theme_name)
 
     def get_deepin_scrot_icon(self):
-        return os.path.join(self.perfix,'cliper/themes/logo/deepin-scrot.ico')
+        return os.path.join(self.perfix,'cliper/theme/logo/deepin-scrot.ico')
 
     def get_elsaclipper_icon(self,icon_filename):
         return os.path.join(self.perfix,'evernote_adapter/icon',icon_filename)        
