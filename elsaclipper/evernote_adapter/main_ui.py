@@ -389,19 +389,35 @@ class StatusIcon:
                         EvernoteAdapter.login()
 
                     self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON_UPLOAD)
-                    ret = EvernoteAdapter.savePicture(filename)
-                    if ret == EvernoteAdapter.STATUS_SAVE_OK :
-                        self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON)
-                        time_str = time.ctime(os.path.getmtime(filename))
-                        Notify.Notification.new('Snapshoot saved to Evernote',time_str,
-                                                FileCatalog.get_elsaclipper_icon('elseclipper_save_icon.png')
-                                            ).show()
-                        os.remove(filename)
-                    else:
-                        self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON_ERROR)
-                        Notify.Notification.new('Failed saving snapshoot to Evernote','',
-                                                FileCatalog.get_elsaclipper_icon('elseclipper_failed_icon.png')
-                                            ).show()
+                    while True:
+                        ret = EvernoteAdapter.savePicture(filename) # TODO: if failed, with for auth and try again
+                        if ret == EvernoteAdapter.STATUS_SAVE_OK :
+                            self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON)
+                            time_str = time.ctime(os.path.getmtime(filename))
+                            Notify.Notification.new('Snapshoot saved to Evernote',time_str,
+                                                    FileCatalog.get_elsaclipper_icon('elseclipper_save_icon.png')
+                                                ).show()
+                            os.remove(filename)
+                            break
+                        elif ret == EvernoteAdapter.STATUS_SAVE_ERROR_NOTEBOOK_DELETED:
+                            self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON_ERROR)
+                            Notify.Notification.new('Failed saving snapshoot to Evernote',
+                                                    'Notebook %s is deleted, please authorize again.' % (EvernoteAdapter.get_notebook_name()),
+                                                    FileCatalog.get_elsaclipper_icon('elseclipper_alert_icon.png')
+                                                ).show()
+                            self.__auth_event.clear()
+                            self.__auth_event.wait()
+                            if not NoteListenerThread.is_running():
+                                return
+                            logging.debug('Trying login')
+                            EvernoteAdapter.login()
+
+                        # else:
+                        #     self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON_ERROR)
+                        #     Notify.Notification.new('Failed saving snapshoot to Evernote','',
+                        #                             FileCatalog.get_elsaclipper_icon('elseclipper_failed_icon.png')
+                        #                         ).show()
+
                 else:
                     break
             pass

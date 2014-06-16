@@ -2,6 +2,7 @@ import os
 import logging
 from evernote.api.client import EvernoteClient
 import evernote.edam.type.ttypes as Types
+import evernote.edam.error.ttypes as ErrorTypes
 from comm.util import KeyRing
 from comm.util import EverNoteConsumerInfo
 from comm.util import MetaData
@@ -23,6 +24,7 @@ class EvernoteAdapter():
     STATUS_SAVE_OK = 3
     STATUS_UNSUPPORTED_FILE_TYPE = 4
     STATUS_SAVE_ERROR = 5
+    STATUS_SAVE_ERROR_NOTEBOOK_DELETED = 6
     
     @classmethod
     def login(cls,):
@@ -65,15 +67,19 @@ class EvernoteAdapter():
     def auth_OK(cls):
         return cls.note_store is not None
 
+    @classmethod
+    def get_notebook_name(cls):
+        return cls.notebook_name
             
     @classmethod
     def savePicture(cls,filename, ):
         '''
         Save the picture to evernote
         Returns:
-          STATUS_SAVE_OK              : The picture is saved to evernote
-          STATUS_UNSUPPORTED_FILE_TYPE: The file type if not supported
-          STATUS_SAVE_ERROR           : Error saving picture to Evernote 
+          STATUS_SAVE_OK                    : The picture is saved to evernote
+          STATUS_UNSUPPORTED_FILE_TYPE      : The file type if not supported
+          STATUS_SAVE_ERROR                 : Error saving picture to Evernote
+          STATUS_SAVE_ERROR_NOTEBOOK_DELETED: Target notebook is deleted 
         '''
         logging.debug(str(filename))
         extension = filename.split('.')[-1]
@@ -132,10 +138,12 @@ class EvernoteAdapter():
         note.resources = resource_list
         try:
             note =  cls.note_store.createNote(note)
-        except Exception,e:
-            logging.error(str(e))
-            logging.error('error saving the note')
-            return cls.STATUS_SAVE_ERROR
+        except ErrorTypes.EDAMNotFoundException:
+            # the target notenook is deleted
+            logging.error('The target notenook is deleted')
+            return cls.STATUS_SAVE_ERROR_NOTEBOOK_DELETED
+
+        # TODO: auth expired
         
         logging.debug('Saving to Evernote Done, file = %s' % filename)
         return cls.STATUS_SAVE_OK
