@@ -91,7 +91,7 @@ class EvernoteAdapter():
 
         # Calculate the md5 hash of the png
         md5 = hashlib.md5()
-        with open(filename,'rb') as f: 
+        with open(filename,'rb') as f:
             png_bytes = f.read()
         md5.update(png_bytes)
         md5hash = md5.hexdigest()

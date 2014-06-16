@@ -5,7 +5,7 @@ import os
 
 class NoteListenerThread():
     class NewFileHandler(pyinotify.ProcessEvent):
-        def process_IN_CREATE(self, event):
+        def process_IN_CLOSE_WRITE(self, event):
             filename = os.path.join(event.path,event.name)
             NoteListenerThread.status_queue.put(filename)
 
@@ -31,7 +31,7 @@ class NoteListenerThread():
             NoteListenerThread.status_queue.put(os.path.join(pathname,filename))
 
         wm = pyinotify.WatchManager()
-        wm.add_watch(pathname, pyinotify.IN_CREATE, rec=True)
+        wm.add_watch(pathname, pyinotify.IN_CLOSE_WRITE, rec=True)
         eh = cls.NewFileHandler()
         cls.notify_thread = pyinotify.ThreadedNotifier(wm,eh)
         cls.notify_thread.start()
