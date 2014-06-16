@@ -56,6 +56,17 @@ class EvernoteAdapter():
             return cls.STATUS_NO_AUTH_TOKEN
 
     @classmethod
+    def logoff(cls):
+        cls.notebook_guid = None
+        cls.notebook_name = None
+        cls.note_store = None
+            
+    @classmethod
+    def auth_OK(cls):
+        return cls.note_store is not None
+
+            
+    @classmethod
     def savePicture(cls,filename, ):
         '''
         Save the picture to evernote

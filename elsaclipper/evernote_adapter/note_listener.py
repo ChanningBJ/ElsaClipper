@@ -44,3 +44,6 @@ class NoteListenerThread():
             cls.status_queue.put(None)
 
 
+    @classmethod
+    def is_running(cls):
+        return cls.notify_thread is not None
