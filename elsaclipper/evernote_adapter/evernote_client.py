@@ -69,7 +69,10 @@ class EvernoteAdapter():
 
     @classmethod
     def get_notebook_name(cls):
-        return cls.notebook_name
+        if cls.notebook_name is None:
+            return ''
+        else:
+            return cls.notebook_name
             
     @classmethod
     def savePicture(cls,filename, ):

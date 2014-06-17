@@ -359,16 +359,17 @@ class StatusIcon:
     PNG_MAIN_ICON_ERROR = FileCatalog.get_elsaclipper_icon('elsaclipper_main_icon_error.png') # root.get_full_path('evernote_adapter','icon','main_icon_error.png')
     
     class NoteListenerManagerThread(threading.Thread):
-        def __init__(self, indicator, auth_event):
+        def __init__(self, status_icon, auth_event):
             threading.Thread.__init__(self)
             self.status_queue = Queue()
             NoteListenerThread.init(self.status_queue)
             Notify.init(__file__)
-            self.__indicator = indicator
+            self.__status_icon = status_icon
             self.__auth_event = auth_event
 
             
         def run(self,):
+            EvernoteAdapter.login()
             NoteListenerThread.start()
             while True:
                 filename = self.status_queue.get()
@@ -376,23 +377,20 @@ class StatusIcon:
                     # logging.debug(str(filename))
 
                     while not EvernoteAdapter.auth_OK():
-                        self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON_ERROR)
-                        Notify.Notification.new('Authorization is needed before save screenshot to Evernote',
-                                                '',
-                                                FileCatalog.get_elsaclipper_icon('elseclipper_alert_icon.png')
-                                            ).show()
+                        self.__status_icon.change_state(StatusIcon.STATE_NOTAUTHED)
+                        # self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON_ERROR)
                         self.__auth_event.clear()
                         self.__auth_event.wait()
                         if not NoteListenerThread.is_running():
                             return
                         logging.debug('Trying login')
                         EvernoteAdapter.login()
-
-                    self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON_UPLOAD)
+                    self.__status_icon.change_state(StatusIcon.STATE_UPLADING)
+                    # self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON_UPLOAD)
                     while True:
-                        ret = EvernoteAdapter.savePicture(filename) # TODO: if failed, with for auth and try again
+                        ret = EvernoteAdapter.savePicture(filename) 
                         if ret == EvernoteAdapter.STATUS_SAVE_OK :
-                            self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON)
+                            self.__status_icon.change_state(StatusIcon.STATE_NORMAL)
                             time_str = time.ctime(os.path.getmtime(filename))
                             Notify.Notification.new('Snapshoot saved to Evernote',time_str,
                                                     FileCatalog.get_elsaclipper_icon('elseclipper_save_icon.png')
@@ -400,24 +398,13 @@ class StatusIcon:
                             os.remove(filename)
                             break
                         elif ret == EvernoteAdapter.STATUS_SAVE_ERROR_NOTEBOOK_DELETED:
-                            self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON_ERROR)
-                            Notify.Notification.new('Failed saving snapshoot to Evernote',
-                                                    'Notebook %s is deleted, please authorize again.' % (EvernoteAdapter.get_notebook_name()),
-                                                    FileCatalog.get_elsaclipper_icon('elseclipper_alert_icon.png')
-                                                ).show()
+                            self.__status_icon.change_state(StatusIcon.STATE_NOTEBOOK_DELETED)
                             self.__auth_event.clear()
                             self.__auth_event.wait()
                             if not NoteListenerThread.is_running():
                                 return
                             logging.debug('Trying login')
                             EvernoteAdapter.login()
-
-                        # else:
-                        #     self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON_ERROR)
-                        #     Notify.Notification.new('Failed saving snapshoot to Evernote','',
-                        #                             FileCatalog.get_elsaclipper_icon('elseclipper_failed_icon.png')
-                        #                         ).show()
-
                 else:
                     break
             pass
@@ -426,7 +413,16 @@ class StatusIcon:
             NoteListenerThread.stop()
             self.__auth_event.set()
                 
+    STATE_NORMAL = 0
+    STATE_UPLADING = 1
+    STATE_NOTEBOOK_DELETED = 2
+    STATE_NOTAUTHED = 3
+    STATE_AUTH_EXPIRED = 4
 
+    ERROR_MSG_FAILED_SAVING = 'Failed saving snapshoot to Evernote'
+    ERROR_MSG_NOTAUTHED = 'Authorization is needed before uploading any screenshot.'
+    ERROR_MSG_NOTEBOOK_DELETED = 'Notebook %s is deleted, please authorize again'
+    
     
     def __init__(self,):
 
@@ -437,25 +433,86 @@ class StatusIcon:
         self.ind.set_icon(StatusIcon.PNG_MAIN_ICON)
 
         menu = Gtk.Menu()
-
+        
         # setting menu
         setting_item = Gtk.MenuItem("Setting")
         setting_item.connect("activate", self.on_setting)
         setting_item.show()
         menu.append(setting_item)
 
+        # error message menu
+        self.error_item = Gtk.MenuItem("Error message")
+        self.error_item.hide()
+        menu.append(self.error_item)
+        
         # quit menu
         quit_item = Gtk.MenuItem("Quit")
         quit_item.connect("activate", self.on_quit)
         quit_item.show()
         menu.append(quit_item)
 
+        menu.set_has_tooltip(True)
+        menu.set_tooltip_text("Make screenshot and save to Evernote")
+        menu.trigger_tooltip_query()
         self.ind.set_menu(menu)
 
         self.__auth_event = threading.Event()
-        self.note_listener_manager = StatusIcon.NoteListenerManagerThread(self.ind,self.__auth_event)
+        self.note_listener_manager = StatusIcon.NoteListenerManagerThread(self,self.__auth_event)
         self.note_listener_manager.start()
 
+    def show_error_message(self, msg):
+        menu_sub = Gtk.Menu()
+        error_info_item = Gtk.MenuItem(msg)
+        error_info_item.show()
+        menu_sub.append(error_info_item)        
+        self.error_item.set_submenu(menu_sub)
+        self.error_item.show()
+
+        
+    def change_state(self,state):
+        cls = self.__class__
+        if state == cls.STATE_NORMAL:
+            logging.debug("State change to STATE_NORMAL")
+            self.ind.set_icon(cls.PNG_MAIN_ICON)
+            self.error_item.hide()
+        elif state == cls.STATE_UPLADING:
+            logging.debug("State change to STATE_UPLADING")
+            self.ind.set_icon(cls.PNG_MAIN_ICON_UPLOAD)
+            self.error_item.hide()
+        elif state == cls.STATE_NOTAUTHED:
+            logging.debug("State change to STATE_NOTAUTHED")
+            self.ind.set_icon(cls.PNG_MAIN_ICON_ERROR)
+            self.show_error_message(cls.ERROR_MSG_NOTAUTHED)
+            # self.error_info_item.set_label(cls.ERROR_MSG_NOTAUTHED)
+            Notify.Notification.new(cls.ERROR_MSG_FAILED_SAVING,
+                                    cls.ERROR_MSG_NOTAUTHED,
+                                    FileCatalog.get_elsaclipper_icon('elseclipper_alert_icon.png')
+                                ).show()
+        elif state == cls.STATE_NOTEBOOK_DELETED:
+            logging.debug("State change to STATE_NOTEBOOK_DELETED")
+            self.ind.set_icon(cls.PNG_MAIN_ICON_ERROR)
+            self.show_error_message(cls.ERROR_MSG_NOTEBOOK_DELETED % (EvernoteAdapter.get_notebook_name()))
+            # self.error_info_item.set_label('sdfsd')
+            # self.error_info_item.set_label(
+            #     cls.ERROR_MSG_NOTEBOOK_DELETED % (EvernoteAdapter.get_notebook_name())
+            # )
+            Notify.Notification.new(cls.ERROR_MSG_FAILED_SAVING,
+                                    cls.ERROR_MSG_NOTEBOOK_DELETED % (EvernoteAdapter.get_notebook_name()),
+                                    FileCatalog.get_elsaclipper_icon('elseclipper_alert_icon.png')
+                                ).show()
+
+        elif state==cls.STATE_AUTH_EXPIRED:
+            logging.debug("State change to STATE_AUTH_EXPIRED")
+            self.ind.set_icon(cls.PNG_MAIN_ICON_ERROR)
+            self.show_error_message("Authorization expired, please authorize again.")
+            self.error_info_item.set_label("Authorization expired, please authorize again.")
+    def show_error(self,message):
+        self.error_info_item.set_label(message)
+        self.error_item.show()
+
+    def hide_error(self):
+        self.error_item.hide()
+        
     def on_setting(self, widget):
         settingDtalog = SettingDialog(widget, self.__auth_event)
         settingDtalog.run()
@@ -489,7 +546,6 @@ def main():
         GLib.threads_init()
         Gdk.threads_init()
         Gdk.threads_enter()
-        EvernoteAdapter.login()
         SettingDialog.KeyBinder.bind_key()
         StatusIcon()
         Gtk.main()
