@@ -30,7 +30,7 @@ def get_filename(path_list):
 
 setup(
     name = "elsaclipper",
-    version = "0.1.1",
+    version = "0.1",
     maintainer='Channing',
     maintainer_email='channing.bj@gmail.com',
     license='GPL',

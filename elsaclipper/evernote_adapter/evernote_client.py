@@ -17,14 +17,16 @@ class EvernoteAdapter():
     note_store = None
 
 
-    STATUS_OK = 0
-    STATUS_NO_AUTH_TOKEN = 1
-    STATUS_NOTEBOOK_DELETED = 2
+    STATUS_LOGIN_OK = 0
+    STATUS_LOGIN_NO_AUTH_TOKEN = 1
+    STATUS_LOGIN_AUTH_EXPIRED = 2
+    STATUS_LOGIN_NOTEBOOK_DELETED = 3
 
     STATUS_SAVE_OK = 3
     STATUS_UNSUPPORTED_FILE_TYPE = 4
     STATUS_SAVE_ERROR = 5
     STATUS_SAVE_ERROR_NOTEBOOK_DELETED = 6
+    STATUS_SAVE_ERROR_AUTH_EXPIRED = 7
     
     @classmethod
     def login(cls,):
@@ -33,7 +35,7 @@ class EvernoteAdapter():
         Returns:
           STATUS_OK              : Everything is fine
           STATUS_NO_AUTH_TOKEN   : No auth token can be found in keying, user should authorize this application
-          STATUS_NOTEBOOK_DELETED: The application is authorized but 'app notebooks' maybe deleted by user, user should authorize this application again.
+          STATUS_AUTH_EXPIRED    : auth expired, need auth again.
 
         For mote information about "app notebooks": http://dev.yinxiang.com/doc/articles/app_notebook.php
         '''
@@ -45,17 +47,20 @@ class EvernoteAdapter():
                 service_host = MetaData.get_evernote_host(),
                 token=auth_token,
                 sandbox=False)
-            cls.note_store = client.get_note_store()
+            try:
+                cls.note_store = client.get_note_store()
+            except ErrorTypes.EDAMUserException:
+                return cls.STATUS_LOGIN_AUTH_EXPIRED
             notebooks = cls.note_store.listNotebooks()
             len_notebooks = len(notebooks)
             if len_notebooks == 0:
                 logging.error("Application notebook has been deleted")
-                return cls.STATUS_NOTEBOOK_DELETED
+                return cls.STATUS_LOGIN_NOTEBOOK_DELETED
             cls.notebook_name = notebooks[0].name
             cls.notebook_guid = notebooks[0].guid
-            return cls.STATUS_OK
+            return cls.STATUS_LOGIN_OK
         else:
-            return cls.STATUS_NO_AUTH_TOKEN
+            return cls.STATUS_LOGIN_NO_AUTH_TOKEN
 
     @classmethod
     def logoff(cls):
@@ -82,7 +87,8 @@ class EvernoteAdapter():
           STATUS_SAVE_OK                    : The picture is saved to evernote
           STATUS_UNSUPPORTED_FILE_TYPE      : The file type if not supported
           STATUS_SAVE_ERROR                 : Error saving picture to Evernote
-          STATUS_SAVE_ERROR_NOTEBOOK_DELETED: Target notebook is deleted 
+          STATUS_SAVE_ERROR_NOTEBOOK_DELETED: Target notebook is deleted
+          STATUS_SAVE_ERROR_AUTH_EXPIRED    : auth expired
         '''
         logging.debug(str(filename))
         extension = filename.split('.')[-1]

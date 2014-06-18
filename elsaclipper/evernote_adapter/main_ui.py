@@ -70,7 +70,6 @@ class AuthDialog():
         self.__dialog.destroy()
         
     def _getEverNoteOAuthURL(self):
-        print MetaData.get_evernote_host()
         client = EvernoteClient(
             consumer_key=EverNoteConsumerInfo.CONSUMER_KEY,
             consumer_secret=EverNoteConsumerInfo.CONSUMER_SECRET,
@@ -80,7 +79,6 @@ class AuthDialog():
 
         callbackUrl = "http://"+PROGRAM_NAME
         request_token = client.get_request_token(callbackUrl)
-        print request_token
         # Save the request token information for later
         self.__authData['oauth_token'] = request_token['oauth_token']
         self.__authData['oauth_token_secret'] = request_token['oauth_token_secret']
@@ -104,7 +102,6 @@ class AuthDialog():
         self.__spinner.show()
         self.__status_label.set_text(AuthDialog.STATUS_MESSAGE_CONNECTING)
         url = req.get_uri()
-        print url
         if PROGRAM_NAME.lower() in url:
             query = urlparse.urlparse(url).query
             data = dict(urlparse.parse_qsl(query))
@@ -126,7 +123,6 @@ class AuthDialog():
                 self.__authData['oauth_token_secret'],
                 self.__authData['oauth_verifier']
             )
-            print self.__auth_token
             self.__dialog.response(100)
         return False
 
@@ -369,22 +365,37 @@ class StatusIcon:
 
             
         def run(self,):
-            EvernoteAdapter.login()
+            
+            self.__status_icon.change_state(StatusIcon.STATE_NORMAL)
+                
             NoteListenerThread.start()
             while True:
                 filename = self.status_queue.get()
                 if type(filename) is str:
                     # logging.debug(str(filename))
 
-                    while not EvernoteAdapter.auth_OK():
-                        self.__status_icon.change_state(StatusIcon.STATE_NOTAUTHED)
-                        # self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON_ERROR)
-                        self.__auth_event.clear()
-                        self.__auth_event.wait()
-                        if not NoteListenerThread.is_running():
-                            return
-                        logging.debug('Trying login')
-                        EvernoteAdapter.login()
+                    if not EvernoteAdapter.auth_OK():
+                        login_res = EvernoteAdapter.login()
+                        while login_res!=EvernoteAdapter.STATUS_LOGIN_OK:
+                            if login_res == EvernoteAdapter.STATUS_LOGIN_AUTH_EXPIRED:
+                                self.__status_icon.change_state(StatusIcon.STATE_AUTH_EXPIRED)
+                            elif login_res == EvernoteAdapter.STATUS_LOGIN_NO_AUTH_TOKEN:
+                                self.__status_icon.change_state(StatusIcon.STATE_NOTAUTHED)
+                            elif login_res == EvernoteAdapter.STATE_NOTEBOOK_DELETED:
+                                self.__status_icon.change_state(StatusIcon.STATE_NOTEBOOK_DELETED)
+                            self.__auth_event.clear()
+                            self.__auth_event.wait()
+                            if not NoteListenerThread.is_running():
+                                return
+                            login_res = EvernoteAdapter.login()
+                    #     self.__status_icon.change_state(StatusIcon.STATE_NOTAUTHED)
+                    #     # self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON_ERROR)
+                    #     self.__auth_event.clear()
+                    #     self.__auth_event.wait()
+                    #     if not NoteListenerThread.is_running():
+                    #         return
+                    #     logging.debug('Trying login')
+                    #     EvernoteAdapter.login()
                     self.__status_icon.change_state(StatusIcon.STATE_UPLADING)
                     # self.__indicator.set_icon(StatusIcon.PNG_MAIN_ICON_UPLOAD)
                     while True:
@@ -422,6 +433,7 @@ class StatusIcon:
     ERROR_MSG_FAILED_SAVING = 'Failed saving snapshoot to Evernote'
     ERROR_MSG_NOTAUTHED = 'Authorization is needed before uploading any screenshot.'
     ERROR_MSG_NOTEBOOK_DELETED = 'Notebook %s is deleted, please authorize again'
+    ERROR_MSG_AUTH_EXPIRED = 'Authorization expired, please authorize again'
     
     
     def __init__(self,):
@@ -500,12 +512,16 @@ class StatusIcon:
                                     cls.ERROR_MSG_NOTEBOOK_DELETED % (EvernoteAdapter.get_notebook_name()),
                                     FileCatalog.get_elsaclipper_icon('elseclipper_alert_icon.png')
                                 ).show()
-
+            KeyRing.set_auth_token('')
         elif state==cls.STATE_AUTH_EXPIRED:
             logging.debug("State change to STATE_AUTH_EXPIRED")
             self.ind.set_icon(cls.PNG_MAIN_ICON_ERROR)
-            self.show_error_message("Authorization expired, please authorize again.")
-            self.error_info_item.set_label("Authorization expired, please authorize again.")
+            self.show_error_message(cls.ERROR_MSG_AUTH_EXPIRED)
+            Notify.Notification.new(cls.ERROR_MSG_AUTH_EXPIRED,
+                                    '',
+                                    FileCatalog.get_elsaclipper_icon('elseclipper_alert_icon.png')
+                                ).show()
+            KeyRing.set_auth_token('')
     def show_error(self,message):
         self.error_info_item.set_label(message)
         self.error_item.show()
