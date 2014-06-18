@@ -19,7 +19,7 @@ def do_scrot():
 if __name__ == '__main__':
     if len(sys.argv)==1:
         print "python __init__.py [ui/clip]"
-    if sys.argv[1] == 'ui':
+    elif sys.argv[1] == 'ui':
         start_ui()
     else:
         do_scrot()

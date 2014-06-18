@@ -13,7 +13,7 @@ This application is developped on Ubuntu 12.04 and tested on Ubuntu 14.04. Other
 > sudo pip install evernote
 
 2. Install python-elsaclipper deb package
-> sudo dpkg -i python-elsaclipper
+> sudo dpkg -i python-elsaclipper_0.1-1_all.deb
 
 After that, you can start the application from Unity dash or start from command line:
 > $ elsaclipper
