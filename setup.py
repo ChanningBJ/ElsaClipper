@@ -140,7 +140,10 @@ setup(
          ['elsaclipper/evernote_adapter/icon/elsaclipper_config.png',
           'elsaclipper/evernote_adapter/icon/elsaclipper_main_icon_error.png',
           'elsaclipper/evernote_adapter/icon/elsaclipper_main_icon.png',
-          'elsaclipper/evernote_adapter/icon/elsaclipper_main_icon_upload.png'
+          'elsaclipper/evernote_adapter/icon/elsaclipper_main_icon_upload.png',
+          'elsaclipper/evernote_adapter/icon/elseclipper_failed_icon.png',
+          'elsaclipper/evernote_adapter/icon/elseclipper_save_icon.png',
+          'elsaclipper/evernote_adapter/icon/elseclipper_alert_icon.png'
          ]),
         ('share/pyshared/elsaclipper/evernote_adapter/',['elsaclipper/evernote_adapter/setting_dialog.glade'])
     ],

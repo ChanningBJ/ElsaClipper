@@ -10,4 +10,7 @@ include elsaclipper/evernote_adapter/icon/elsaclipper_config.png
 include elsaclipper/evernote_adapter/icon/elsaclipper_main_icon_error.png
 include elsaclipper/evernote_adapter/icon/elsaclipper_main_icon.png
 include elsaclipper/evernote_adapter/icon/elsaclipper_main_icon_upload.png
+include elsaclipper/evernote_adapter/icon/elseclipper_failed_icon.png
+include elsaclipper/evernote_adapter/icon/elseclipper_save_icon.png	
+include elsaclipper/evernote_adapter/icon/elseclipper_alert_icon.png
 recursive-include elsaclipper/evernote_adapter/icon *.png

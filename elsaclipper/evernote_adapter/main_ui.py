@@ -284,6 +284,7 @@ class SettingDialog:
 
     def on_account_type_changed(self, radiobutton):
         if radiobutton.get_active():
+            EvernoteAdapter.logoff()
             if radiobutton is self.__radiobutton_yinxiang:
                 logging.debug('change to yinxiang')
                 MetaData.set_evernote_host_yinxiang()
@@ -438,11 +439,11 @@ class StatusIcon:
     
     def __init__(self,):
 
-        self.ind = AppIndicator.Indicator.new("elsaclipper-indicator",
+        self.__ind = AppIndicator.Indicator.new("elsaclipper-indicator",
                                               "indicator-messages",
                                               AppIndicator.IndicatorCategory.APPLICATION_STATUS)
-        self.ind.set_status(AppIndicator.IndicatorStatus.ACTIVE)
-        self.ind.set_icon(StatusIcon.PNG_MAIN_ICON)
+        self.__ind.set_status(AppIndicator.IndicatorStatus.ACTIVE)
+        self.__ind.set_icon(StatusIcon.PNG_MAIN_ICON)
 
         menu = Gtk.Menu()
         
@@ -453,9 +454,9 @@ class StatusIcon:
         menu.append(setting_item)
 
         # error message menu
-        self.error_item = Gtk.MenuItem("Error message")
-        self.error_item.hide()
-        menu.append(self.error_item)
+        self.__error_item = Gtk.MenuItem("Error message")
+        self.__error_item.hide()
+        menu.append(self.__error_item)
         
         # quit menu
         quit_item = Gtk.MenuItem("Quit")
@@ -466,34 +467,34 @@ class StatusIcon:
         menu.set_has_tooltip(True)
         menu.set_tooltip_text("Make screenshot and save to Evernote")
         menu.trigger_tooltip_query()
-        self.ind.set_menu(menu)
+        self.__ind.set_menu(menu)
 
         self.__auth_event = threading.Event()
-        self.note_listener_manager = StatusIcon.NoteListenerManagerThread(self,self.__auth_event)
-        self.note_listener_manager.start()
+        self.__note_listener_manager = StatusIcon.NoteListenerManagerThread(self,self.__auth_event)
+        self.__note_listener_manager.start()
 
     def show_error_message(self, msg):
         menu_sub = Gtk.Menu()
         error_info_item = Gtk.MenuItem(msg)
         error_info_item.show()
         menu_sub.append(error_info_item)        
-        self.error_item.set_submenu(menu_sub)
-        self.error_item.show()
+        self.__error_item.set_submenu(menu_sub)
+        self.__error_item.show()
 
         
     def change_state(self,state):
         cls = self.__class__
         if state == cls.STATE_NORMAL:
             logging.debug("State change to STATE_NORMAL")
-            self.ind.set_icon(cls.PNG_MAIN_ICON)
-            self.error_item.hide()
+            self.__ind.set_icon(cls.PNG_MAIN_ICON)
+            self.__error_item.hide()
         elif state == cls.STATE_UPLADING:
             logging.debug("State change to STATE_UPLADING")
-            self.ind.set_icon(cls.PNG_MAIN_ICON_UPLOAD)
-            self.error_item.hide()
+            self.__ind.set_icon(cls.PNG_MAIN_ICON_UPLOAD)
+            self.__error_item.hide()
         elif state == cls.STATE_NOTAUTHED:
             logging.debug("State change to STATE_NOTAUTHED")
-            self.ind.set_icon(cls.PNG_MAIN_ICON_ERROR)
+            self.__ind.set_icon(cls.PNG_MAIN_ICON_ERROR)
             self.show_error_message(cls.ERROR_MSG_NOTAUTHED)
             # self.error_info_item.set_label(cls.ERROR_MSG_NOTAUTHED)
             Notify.Notification.new(cls.ERROR_MSG_FAILED_SAVING,
@@ -502,7 +503,7 @@ class StatusIcon:
                                 ).show()
         elif state == cls.STATE_NOTEBOOK_DELETED:
             logging.debug("State change to STATE_NOTEBOOK_DELETED")
-            self.ind.set_icon(cls.PNG_MAIN_ICON_ERROR)
+            self.__ind.set_icon(cls.PNG_MAIN_ICON_ERROR)
             self.show_error_message(cls.ERROR_MSG_NOTEBOOK_DELETED % (EvernoteAdapter.get_notebook_name()))
             # self.error_info_item.set_label('sdfsd')
             # self.error_info_item.set_label(
@@ -515,7 +516,7 @@ class StatusIcon:
             KeyRing.set_auth_token('')
         elif state==cls.STATE_AUTH_EXPIRED:
             logging.debug("State change to STATE_AUTH_EXPIRED")
-            self.ind.set_icon(cls.PNG_MAIN_ICON_ERROR)
+            self.__ind.set_icon(cls.PNG_MAIN_ICON_ERROR)
             self.show_error_message(cls.ERROR_MSG_AUTH_EXPIRED)
             Notify.Notification.new(cls.ERROR_MSG_AUTH_EXPIRED,
                                     '',
@@ -524,10 +525,10 @@ class StatusIcon:
             KeyRing.set_auth_token('')
     def show_error(self,message):
         self.error_info_item.set_label(message)
-        self.error_item.show()
+        self.__error_item.show()
 
     def hide_error(self):
-        self.error_item.hide()
+        self.__error_item.hide()
         
     def on_setting(self, widget):
         settingDtalog = SettingDialog(widget, self.__auth_event)
@@ -535,7 +536,7 @@ class StatusIcon:
         settingDtalog.destroy()
 
     def on_quit(self, widget):
-        self.note_listener_manager.stop()
+        self.__note_listener_manager.stop()
         Gtk.main_quit(widget)
         sys.exit()
 
