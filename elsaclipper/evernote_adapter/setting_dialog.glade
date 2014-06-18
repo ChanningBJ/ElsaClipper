@@ -399,17 +399,7 @@
               <placeholder/>
             </child>
             <child>
-              <object class="GtkButton" id="auth_dialog_close_button">
-                <property name="label" translatable="yes">close</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
+              <placeholder/>
             </child>
           </object>
           <packing>
@@ -489,8 +479,5 @@
         </child>
       </object>
     </child>
-    <action-widgets>
-      <action-widget response="0">auth_dialog_close_button</action-widget>
-    </action-widgets>
   </object>
 </interface>
